@@ -1,20 +1,20 @@
 package com.rison.apitest.sinktest
 
+import java.util
 import java.util.Properties
 
 import com.rison.apitest.SensorReading
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.connectors.elasticsearch6.ElasticsearchSink
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer011
-import org.apache.flink.streaming.connectors.redis.RedisSink
-import org.apache.flink.streaming.connectors.redis.common.config.FlinkJedisPoolConfig
-import org.apache.flink.streaming.connectors.redis.common.mapper.{RedisCommand, RedisCommandDescription, RedisMapper}
+import org.apache.http.HttpHost
 
 /**
- * @author : Rison 2021/6/7 下午3:37
+ * @author : Rison 2021/6/7 下午4:03
  *
  */
-object RedisSinkTest {
+object ESSinkTest {
   def main(args: Array[String]): Unit = {
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
@@ -34,25 +34,11 @@ object RedisSinkTest {
         SensorReading(arr(0).toString, arr(1).toLong, arr(2).toDouble)
       }
     )
-    val conf =  new FlinkJedisPoolConfig.Builder().setHost("localhost").setPort(6379).build()
-   dataMapStream.addSink(new RedisSink[SensorReading](conf, new MyRedisSinkMapper))
-    env.execute(redis sink)
-  }
-}
-
-
-class MyRedisSinkMapper extends RedisMapper[SensorReading]{
-  override def getCommandDescription: RedisCommandDescription = {
-    //定义保存数据到redis命令, hset 表名 key value
-    new RedisCommandDescription(RedisCommand.HSET, "sensor_temp")
-  }
-  //将id指定为key
-  override def getKeyFromData(t: SensorReading): String = {
-    t.id.toString
-  }
-
-  //将温度值指定为value
-  override def getValueFromData(t: SensorReading): String = {
-    t.temperature.toString
+    import scala.collection.JavaConverters._
+    val httpHosts = new util.ArrayList[HttpHost]()
+    httpHosts.add(new HttpHost("localhost", 9200))
+    new ElasticsearchSink.Builder[SensorReading](httpHosts, new MyElasticsearchSinkFunction)
+    dataMapStream.addSink(new ElasticsearchSink[SensorReading]())
+    env.execute("elasticsearch_sink")
   }
 }
