@@ -39,7 +39,7 @@ object KafkaSinkTest {
 
     dataMapStream.print()
 
-    env.execute("file sink")
+    env.execute("kafka sink")
   }
 
 }
