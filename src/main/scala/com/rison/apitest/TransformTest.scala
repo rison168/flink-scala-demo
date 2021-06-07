@@ -1,5 +1,7 @@
 package com.rison.apitest
 
+import org.apache.flink.api.common.functions.{FilterFunction, IterationRuntimeContext, MapFunction, RichMapFunction}
+import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.scala._
 
 /**
@@ -51,9 +53,37 @@ object TransformTest {
 //    coMapResultStream.print()
     //联合 数据类型一致
     val unionStream: DataStream[SensorReading] = highStream.union(lowStream)
-    unionStream.print()
+    unionStream.filter(_.id.startsWith("sensor_1")).print()
+    unionStream.filter(new MyFilter).print()
 
     env.execute("transform test")
   }
 
+}
+//自定义一个函数类
+class MyFilter extends FilterFunction[SensorReading] {
+  override def filter(t: SensorReading): Boolean = {
+    t.id.startsWith("sensor_1")
+  }
+}
+//其实就是普通的labam表达式方式
+class MyMapper extends MapFunction[SensorReading, String]{
+  override def map(in: SensorReading): String = {
+    in.id + "temperature"
+  }
+}
+//富函数实现可以实现很多自定义方法，可以获取到运行的上下文、还有一些生命周期
+class MyRichMapper extends RichMapFunction[SensorReading, String]{
+  override def map(in: SensorReading): String = {
+    in.id + "temperature"
+  }
+
+  override def open(parameters: Configuration): Unit = {
+    //生命周期，做一些初始化操作，比如数据库的连接，在当前这个类创建的时候会调用一次
+    getRuntimeContext()
+  }
+
+  override def close(): Unit = {
+    //一般做收尾工作，比如关闭数据库 连接，获取清空状态（针对状态编程）
+  }
 }

@@ -2,6 +2,7 @@ package com.rison.apitest
 
 import java.util.Properties
 
+import org.apache.flink.api.common.functions.FilterFunction
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.connectors.kafka.{FlinkKafkaConsumer011, FlinkKafkaConsumer09}
@@ -27,11 +28,13 @@ object SourceTest {
     )
 
     val stream1: DataStream[SensorReading] = env.fromCollection(dataList)
+//    stream1.print()
+    stream1.filter(new MyFilter)
     stream1.print()
 
     //2 从文件读取数据
     val stream2: DataStream[String] = env.readTextFile("data/sensor.txt")
-    stream2.print()
+//    stream2.print()
 
     //3 从kafka中读取数据
     val properties = new Properties()
@@ -47,7 +50,7 @@ object SourceTest {
 
     //4 自定义source
     val stream4: DataStream[SensorReading] = env.addSource(MySensorSource())
-    stream4.print()
+//    stream4.print()
 
 
     //执行
