@@ -18,7 +18,7 @@ object KafkaSinkTest {
   def main(args: Array[String]): Unit = {
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
-    //从kafka中读取数据
+    //3 从kafka中读取数据
     val properties = new Properties()
     properties.setProperty("bootstrap.servers", "localhost:9092")
     properties.setProperty("group.id", "consumer-group")
@@ -27,7 +27,13 @@ object KafkaSinkTest {
     properties.setProperty("value.deserializer",
       "org.apache.kafka.common.serialization.StringDeserializer")
     properties.setProperty("auto.offset.reset", "latest")
-    val dataMapStream: DataStream[String] = env.addSource(new FlinkKafkaConsumer011[String]("sensor", new SimpleStringSchema(), properties))
+    val dataStream: DataStream[String] = env.addSource(new FlinkKafkaConsumer011[String]("sensor", new SimpleStringSchema(), properties))
+    val dataMapStream: DataStream[String] = dataStream.map(
+      data => {
+        val arr = data.split(" ")
+        SensorReading(arr(0).toString, arr(1).toLong, arr(2).toDouble).toString
+      }
+    )
 
     dataMapStream.addSink(new FlinkKafkaProducer011[String]("localhost:9092", "topic", new SimpleStringSchema()))
 
