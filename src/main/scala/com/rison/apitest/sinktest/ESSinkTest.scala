@@ -37,8 +37,8 @@ object ESSinkTest {
     import scala.collection.JavaConverters._
     val httpHosts = new util.ArrayList[HttpHost]()
     httpHosts.add(new HttpHost("localhost", 9200))
-    new ElasticsearchSink.Builder[SensorReading](httpHosts, new MyElasticsearchSinkFunction)
-    dataMapStream.addSink(new ElasticsearchSink[SensorReading]())
+    val esSinkFunc = new ElasticsearchSink.Builder[SensorReading](httpHosts, new MyElasticsearchSinkFunction).build()
+    dataMapStream.addSink(esSinkFunc)
     env.execute("elasticsearch_sink")
   }
 }

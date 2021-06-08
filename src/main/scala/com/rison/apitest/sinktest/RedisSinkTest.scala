@@ -36,7 +36,7 @@ object RedisSinkTest {
     )
     val conf =  new FlinkJedisPoolConfig.Builder().setHost("localhost").setPort(6379).build()
    dataMapStream.addSink(new RedisSink[SensorReading](conf, new MyRedisSinkMapper))
-    env.execute(redis sink)
+    env.execute("redis sink")
   }
 }
 
