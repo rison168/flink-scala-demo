@@ -28,11 +28,17 @@ object WindowWaterMarkTest {
     .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[SensorReading](Time.milliseconds(30)) {
       override def extractTimestamp(t: SensorReading) = t.timestamp * 1000L
     })// 一般给一个小的毫秒延时,比如三十毫秒,下面结合允许处理延迟数据、侧输出流保证数据
-  streamMap.map( data => (data.id, data.timestamp, data.temperature))
+  private val resultStream: DataStream[(String, Long, Double)] = streamMap.map(data => (data.id, data.timestamp, data.temperature))
     .keyBy(_._1)
     .timeWindow(Time.seconds(5))
     .allowedLateness(Time.minutes(1)) //最大迟到延时时间
     .sideOutputLateData(new OutputTag[(String, Long, Double)]("late")) //侧输出流，保证数据不丢
+    .reduce(
+      (curRes, newRes) => (curRes._1, curRes._2.min(newRes._2), curRes._3)
+    )
+  resultStream.print()
+
+  resultStream.getSideOutput(new OutputTag[(String, Long, Double)]("late")).print()
 
 
 
