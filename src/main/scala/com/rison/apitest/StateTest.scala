@@ -14,7 +14,8 @@ import org.apache.flink.streaming.api.scala._
  */
 object StateTest {
   def main(args: Array[String]): Unit = {
-    val environment: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
+    val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
+    env.setParallelism(1)
     //从文件读取数据
     val stream: DataStream[String] = env.readTextFile("data/sensor.txt")
     //转换类型
@@ -44,7 +45,7 @@ object StateTest {
       }
     alterStream.print()
 
-    environment.execute("state Test")
+    env.execute("state Test")
 
   }
 }
