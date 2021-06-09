@@ -73,7 +73,7 @@ class MyMapper extends MapFunction[SensorReading, String]{
   }
 }
 //富函数实现可以实现很多自定义方法，可以获取到运行的上下文、还有一些生命周期
-class MyRichMapper extends RichMapFunction[SensorReading, String]{
+class MyRichMapper1 extends RichMapFunction[SensorReading, String]{
   override def map(in: SensorReading): String = {
     in.id + "temperature"
   }

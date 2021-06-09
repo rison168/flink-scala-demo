@@ -23,18 +23,41 @@ object StateTest {
         val arr = data.split(" ")
         SensorReading(arr(0), arr(1).toLong, arr(2).toDouble)
       }
-    ).keyBy(_.id).reduce()
+    )
+    //需求： 对于温度传感器温度值跳变，超过10度，报警
+
+    val alterStream = streamMap.keyBy(_.id)
+      //      .flatMap(
+      //        TempChangeAlert(10.0)
+      //      )
+      .flatMapWithState[(String, Double, Double), Double]{
+        case (data: SensorReading, None) => (List.empty, Some(data.temperature))
+        case (data: SensorReading, lastTemp: Some[Double]) => {
+          //比较
+          val temp: Double = (data.temperature - lastTemp.get).abs
+          if (temp > 10.0) {
+            (List((data.id, lastTemp.get, data.temperature)), Some(data.temperature))
+          } else {
+            (List.empty, Some(data.temperature))
+          }
+        }
+      }
+    alterStream.print()
+
+    environment.execute("state Test")
 
   }
 }
+
 //keyed state : 必须定义在RichFunction中，因为需要运行时上下文
-class MyRichMapper extends RichMapFunction[SensorReading, String]{
+class MyRichMapper extends RichMapFunction[SensorReading, String] {
   var valueState: ValueState[Double] = _
   lazy val listState: ListState[Int] = getRuntimeContext.getListState(new ListStateDescriptor[Int]("listState", classOf[Int]))
   lazy val mapState: MapState[String, Double] = getRuntimeContext.getMapState(new MapStateDescriptor[String, Double]("mapState", classOf[String], classOf[Double]))
   lazy val reduceState: ReducingState[SensorReading] = getRuntimeContext.getReducingState(new ReducingStateDescriptor[SensorReading]("reduceState", (data1, data2) => new SensorReading(data2.id, data2.timestamp, data1.temperature.min(data2.temperature)), classOf[SensorReading]))
+
   override def open(parameters: Configuration): Unit = {
-   valueState = getRuntimeContext.getState(new ValueStateDescriptor[Double]("valueState", classOf[Double]))
+    valueState = getRuntimeContext.getState(new ValueStateDescriptor[Double]("valueState", classOf[Double]))
   }
 
   override def map(in: SensorReading): String = {
