@@ -1,5 +1,6 @@
 package com.rison.apitest
 
+import org.apache.flink.runtime.state.memory.MemoryStateBackend
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.util.Collector
@@ -12,6 +13,9 @@ object SideOutPutTest {
   def main(args: Array[String]): Unit = {
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
+    env.setStateBackend(new MemoryStateBackend())
+//    env.setStateBackend(new FsStateBackend("hdfs:hadoop:8200"))
+//    env.setStateBackend(new RocksDBStateBackend(""))
     //从文件读取数据
     val stream: DataStream[String] = env.readTextFile("data/sensor.txt")
     //转换类型
